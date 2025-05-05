@@ -19,19 +19,23 @@
 import { onMounted, ref } from 'vue';
 import * as d3 from 'd3';
 
-// Accept a data file name as prop for reusability
-const props = defineProps<{
-  dataFile: string;
-}>();
+// Accept an optional dataFile prop
+const props = defineProps<{ dataFile?: string }>();
 
 const gamesCount = ref(0);
 const playersCount = ref(0);
 const typesCount = ref(0);
 
 onMounted(async () => {
-  // Build CSV URL from prop
-  const csvUrl = import.meta.env.BASE_URL + `data/${props.dataFile}`;
-  const data = (await d3.csv(csvUrl)) as Array<{ Date: string; Person: string; Game: string }>;
+  let data: Array<{ Date: string; Person: string; Game: string }> = [];
+  if (props.dataFile) {
+    try {
+      const csvUrl = import.meta.env.BASE_URL + `data/${props.dataFile}`;
+      data = (await d3.csv(csvUrl)) as Array<{ Date: string; Person: string; Game: string }>;
+    } catch (err) {
+      console.warn('Could not load dataFile:', props.dataFile, err);
+    }
+  }
 
   gamesCount.value = data.length;
   playersCount.value = new Set(data.map(d => d.Person)).size;

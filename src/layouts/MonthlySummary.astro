@@ -1,0 +1,14 @@
+---
+import BaseLayout from './BaseLayout.astro';
+const { title, date } = Astro.props;
+---
+<BaseLayout title={title}>
+  <article class="prose mx-auto py-8">
+    <header class="mb-8">
+      <h1 class="text-3xl font-bold">{title}</h1>
+      { date && <time datetime={date}>{date}</time> }
+    </header>
+    {/* this is where your MDX content (and any embedded components) will go */}
+    <slot />
+  </article>
+</BaseLayout>

@@ -1,11 +1,17 @@
 ---
-layout: '../../../layouts/2025/April25Layout.astro'
-title: 'April 2025 Dashboard'
+layout: '../../../layouts/MonthlySummary.astro'
+title: 'April 2025 Summary'
+date: '2025-05-01'
 dataFile: '2025_GamesClub_Data.csv'
 ---
 
-Here's some prose at the top of the page…
+import GamesStats from '../../../components/GamesStats.vue';
+import GamesPlayed from '../../../components/GamesPlayed.vue';
 
-More text…
+Here’s a quick overview of how the club did this month. We saw some close finishes and a few blowouts…
 
-*That’s it!* The layout already injected both components with the right CSV filename.
+<GamesStats client:visible dataFile="2025_GamesClub_Data.csv" />
+
+All together, that worked out to some interesting totals…
+
+<GamesPlayed client:visible dataFile="2025_GamesClub_Data.csv" />
