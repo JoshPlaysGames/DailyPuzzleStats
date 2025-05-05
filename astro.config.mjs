@@ -7,7 +7,7 @@ export default defineConfig({
   base: '/DailyPuzzleStats/',
 
   // output to a folder GitHub Pages can serve
-  outDir: 'docs',
+  outDir: 'dist',
 
   integrations: [
     vue(),
