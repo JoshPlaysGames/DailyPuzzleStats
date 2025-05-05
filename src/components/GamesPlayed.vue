@@ -17,7 +17,7 @@ onMounted(async () => {
   // Build CSV URL
   const csvUrl = import.meta.env.BASE_URL + 'data/2025_GamesClub_Data.csv';
 
-  // Parse M/D/YYYY dates
+  // Parse dates
   const parseDate = d3.timeParse('%m/%d/%Y');
   const rawData = (await d3.csv(csvUrl, d => ({
     Date: parseDate(d.Date as string)!,
@@ -25,37 +25,36 @@ onMounted(async () => {
     Game: d.Game as string,
   }))) as Array<{ Date: Date; Person: string; Game: string }>;
 
-  // Generate a full range of dates from first to last entry
+  // Generate full range of dates
   const [minDate, maxDate] = d3.extent(rawData, d => d.Date) as [Date, Date];
   const dates: Date[] = [];
   for (let dt = new Date(minDate); dt <= maxDate; dt.setDate(dt.getDate() + 1)) {
     dates.push(new Date(dt));
   }
 
-  // Map each date to a day index
+  // Map dates to day index
   const dateToDay = new Map<number, number>(
     dates.map((d, i) => [d.getTime(), i + 1])
   );
 
-  // Daily counts (zero for days with no entries)
-  const dailyCounts: DailyCount[] = dates.map(d => {
-    const count = rawData.filter(r => r.Date.getTime() === d.getTime()).length;
-    return { day: dateToDay.get(d.getTime())!, count };
-  });
-
-  // Cumulative totals
+  // Compute daily counts and cumulative totals
+  const dailyCounts: DailyCount[] = dates.map(d => ({
+    day: dateToDay.get(d.getTime())!,
+    count: rawData.filter(r => r.Date.getTime() === d.getTime()).length
+  }));
   let running = 0;
   const cumulative: Cumulative[] = dailyCounts.map(d => {
     running += d.count;
     return { day: d.day, total: running };
   });
 
-  // Dimensions and margins
-  const margin = { top: 20, right: 30, bottom: 40, left: 50 };
+  // Chart dimensions and margins
+  const margin = { top: 20, right: 150, bottom: 100, left: 70 };
   const width = 900 - margin.left - margin.right;
   const height = 400 - margin.top - margin.bottom;
+  const axisLabelOffset = 50;
 
-  // Create SVG canvas and set font
+  // Create SVG canvas
   const svg = d3.select(chart.value)
     .append('svg')
     .attr('width', width + margin.left + margin.right)
@@ -64,28 +63,24 @@ onMounted(async () => {
     .append('g')
     .attr('transform', `translate(${margin.left},${margin.top})`);
 
-  // X scale (days)
+  // Scales
   const x = d3.scaleBand<number>()
     .domain(dailyCounts.map(d => d.day))
     .range([0, width])
     .padding(0.1);
-
-  // Y scales
   const yBar = d3.scaleLinear()
     .domain([0, d3.max(dailyCounts, d => d.count)!])
     .nice()
     .range([height, 0]);
-
   const yLine = d3.scaleLinear()
     .domain([0, d3.max(cumulative, d => d.total)!])
     .nice()
     .range([height, 0]);
 
-  // Axes
+  // Draw axes
   svg.append('g')
     .attr('transform', `translate(0,${height})`)
     .call(d3.axisBottom(x));
-
   svg.append('g')
     .call(d3.axisLeft(yBar));
 
@@ -93,9 +88,8 @@ onMounted(async () => {
   svg.append('text')
     .attr('text-anchor', 'middle')
     .attr('x', width / 2)
-    .attr('y', height + margin.bottom - 10)
+    .attr('y', height + axisLabelOffset)
     .text('Day');
-
   svg.append('text')
     .attr('text-anchor', 'middle')
     .attr('transform', `translate(${-margin.left + 15},${height / 2}) rotate(-90)`)
@@ -106,18 +100,17 @@ onMounted(async () => {
     .data(dailyCounts)
     .enter()
     .append('rect')
-    .attr('class', 'bar')
-    .attr('x', d => x(d.day)!)
-    .attr('y', d => yBar(d.count))
-    .attr('width', x.bandwidth())
-    .attr('height', d => height - yBar(d.count))
-    .attr('fill', 'steelblue');
+      .attr('class', 'bar')
+      .attr('x', d => x(d.day)!)
+      .attr('y', d => yBar(d.count))
+      .attr('width', x.bandwidth())
+      .attr('height', d => height - yBar(d.count))
+      .attr('fill', 'steelblue');
 
   // Draw cumulative line
   const lineGen = d3.line<Cumulative>()
     .x(d => x(d.day)! + x.bandwidth() / 2)
     .y(d => yLine(d.total));
-
   svg.append('path')
     .datum(cumulative)
     .attr('fill', 'none')
@@ -125,15 +118,58 @@ onMounted(async () => {
     .attr('stroke-width', 2)
     .attr('d', lineGen);
 
-  // Hover groups for line and bar
+  // Legend entries
+  const legendY = height + axisLabelOffset + 20;
+  const legend = svg.append('g')
+    .attr('transform', `translate(${width / 2}, ${legendY})`)
+    .style('font-size', '12px');
+  const entries = [
+    { label: 'Games / Day', type: 'rect', color: 'steelblue' },
+    { label: 'Total Games', type: 'circle', color: 'orange' }
+  ];
+  const entrySpacing = 150;
+
+  entries.forEach((d, i) => {
+    const xOffset = (i - (entries.length - 1) / 2) * entrySpacing;
+    const gEntry = legend.append('g')
+      .attr('transform', `translate(${xOffset}, 0)`);
+    if (d.type === 'rect') {
+      gEntry.append('rect')
+        .attr('x', 0)
+        .attr('y', -6)
+        .attr('width', 12)
+        .attr('height', 12)
+        .attr('fill', d.color);
+    } else {
+      gEntry.append('circle')
+        .attr('cx', 6)
+        .attr('cy', 0)
+        .attr('r', 6)
+        .attr('fill', d.color);
+    }
+    gEntry.append('text')
+      .attr('x', 18)
+      .attr('y', 0)
+      .attr('dominant-baseline', 'middle')
+      .attr('dy', '0.12em')
+      .text(d.label);
+  });
+
+  // Hover layers
   const hoverLine = svg.append('g').style('display', 'none');
   hoverLine.append('circle').attr('r', 4).attr('fill', 'orange');
-  hoverLine.append('text').attr('class', 'hover-label').attr('text-anchor', 'middle').attr('dy', -10);
+  hoverLine.append('text')
+    .attr('class', 'hover-label')
+    .attr('text-anchor', 'middle')
+    .attr('dy', -10);
 
   const hoverBar = svg.append('g').style('display', 'none');
-  hoverBar.append('text').attr('class', 'bar-label').attr('text-anchor', 'middle').attr('dy', -5);
+  hoverBar.append('text')
+    .attr('class', 'bar-label')
+    .attr('text-anchor', 'middle')
+    .attr('dy', -5);
 
-  // Overlay to capture mouse events for both charts
+  // Interaction overlay
   svg.append('rect')
     .attr('width', width)
     .attr('height', height)
@@ -149,23 +185,17 @@ onMounted(async () => {
     })
     .on('mousemove', (event) => {
       const [mx] = d3.pointer(event);
-      // Compute center x positions for each day
       const xCenters = dailyCounts.map(d => x(d.day)! + x.bandwidth() / 2);
-      // Find nearest day index
       const bisect = d3.bisector((d: number) => d).center;
       const idx = bisect(xCenters, mx);
 
-      // Data for line and bar
       const c = cumulative[idx];
       const b = dailyCounts[idx];
-
-      // Position line hover
       const cxLine = x(c.day)! + x.bandwidth() / 2;
       const cyLine = yLine(c.total);
       hoverLine.select('circle').attr('cx', cxLine).attr('cy', cyLine);
       hoverLine.select('text').attr('x', cxLine).attr('y', cyLine).text(c.total);
 
-      // Position bar hover
       const cxBar = x(b.day)! + x.bandwidth() / 2;
       const cyBar = yBar(b.count);
       hoverBar.select('text').attr('x', cxBar).attr('y', cyBar).text(b.count);
