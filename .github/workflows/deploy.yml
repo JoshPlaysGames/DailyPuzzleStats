@@ -1,0 +1,36 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Check out your repo
+      - uses: actions/checkout@v3
+
+      # 2. Install dependencies
+      - name: Install npm packages
+        run: npm ci
+
+      # 3. Run your Astro build (outputs into docs/)
+      - name: Build Astro site
+        run: npm run build
+
+      # 4. Disable Jekyll (optional, but harmless)
+      - name: Add .nojekyll
+        run: touch docs/.nojekyll
+
+      # 5. Configure the Pages deploy
+      - uses: actions/configure-pages@v4
+
+      # 6. Upload docs/ as the Pages site artifact
+      - uses: actions/upload-pages-artifact@v1
+        with:
+          path: docs
+
+      # 7. Publish it
+      - uses: actions/deploy-pages@v3
