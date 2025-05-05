@@ -10,7 +10,7 @@ type DailyCount = { day: number; count: number };
 type Cumulative = { day: number; total: number };
 
 // Accept an optional dataFile prop
-const props = defineProps<{ dataFile?: string; }>();
+const props = defineProps<{ dataFile?: string }>();
 
 const chart = ref<HTMLElement | null>(null);
 
@@ -36,7 +36,7 @@ onMounted(async () => {
   }
 
   // Dimensions & margins
-  const margin = { top: 20, right: 150, bottom: 100, left: 70 };
+  const margin = { top: 20, right: 70, bottom: 100, left: 70 };
   const width = 900 - margin.left - margin.right;
   const height = 400 - margin.top - margin.bottom;
   const axisLabelOffset = 50;
@@ -87,8 +87,17 @@ onMounted(async () => {
   const yLine = d3.scaleLinear().domain([0, yLineMax]).nice().range([height, 0]);
 
   // Draw axes
-  svg.append('g').attr('transform', `translate(0,${height})`).call(d3.axisBottom(x));
-  svg.append('g').call(d3.axisLeft(yBar));
+  svg.append('g')
+    .attr('transform', `translate(0,${height})`)
+    .call(d3.axisBottom(x));
+
+  svg.append('g')
+    .call(d3.axisLeft(yBar));
+
+  // Right-side axis for line
+  svg.append('g')
+    .attr('transform', `translate(${width},0)`)
+    .call(d3.axisRight(yLine));
 
   // Axis labels
   svg.append('text')
@@ -96,10 +105,17 @@ onMounted(async () => {
     .attr('x', width / 2)
     .attr('y', height + axisLabelOffset)
     .text('Day');
+
   svg.append('text')
     .attr('text-anchor', 'middle')
     .attr('transform', `translate(${-margin.left + 15},${height / 2}) rotate(-90)`)
     .text('Number of Games');
+
+  // Right axis label
+  svg.append('text')
+    .attr('text-anchor', 'middle')
+    .attr('transform', `translate(${width + margin.right - 15},${height / 2}) rotate(90)`)
+    .text('Total Games');
 
   // If no data, show message and exit
   if (rawData.length === 0) {
