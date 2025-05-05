@@ -1,10 +1,14 @@
 ---
+layout: '../layouts/BaseLayout.astro'
 title: Games Club Dashboard
 ---
 
 import GamesPlayed from '../components/GamesPlayed.vue';
+import GamesStats from '../components/GameStats.vue';
 
 # Welcome to the Games Club Dashboard
+
+<GamesStats client:visible />
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus lacinia odio vitae vestibulum vestibulum. Cras venenatis euismod malesuada. Donec at purus ac velit facilisis pretium. Sed nec facilisis lacus.
 
