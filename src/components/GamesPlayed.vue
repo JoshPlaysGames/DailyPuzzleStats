@@ -14,10 +14,8 @@ const chart = ref<HTMLElement | null>(null);
 onMounted(async () => {
   if (!chart.value) return;
 
-  // Build CSV URL
+  // Load and parse data
   const csvUrl = import.meta.env.BASE_URL + 'data/2025_GamesClub_Data.csv';
-
-  // Parse dates
   const parseDate = d3.timeParse('%m/%d/%Y');
   const rawData = (await d3.csv(csvUrl, d => ({
     Date: parseDate(d.Date as string)!,
@@ -25,19 +23,15 @@ onMounted(async () => {
     Game: d.Game as string,
   }))) as Array<{ Date: Date; Person: string; Game: string }>;
 
-  // Generate full range of dates
+  // Generate full date range
   const [minDate, maxDate] = d3.extent(rawData, d => d.Date) as [Date, Date];
   const dates: Date[] = [];
   for (let dt = new Date(minDate); dt <= maxDate; dt.setDate(dt.getDate() + 1)) {
     dates.push(new Date(dt));
   }
 
-  // Map dates to day index
-  const dateToDay = new Map<number, number>(
-    dates.map((d, i) => [d.getTime(), i + 1])
-  );
-
-  // Compute daily counts and cumulative totals
+  // Compute daily counts and cumulative
+  const dateToDay = new Map<number, number>(dates.map((d, i) => [d.getTime(), i + 1]));
   const dailyCounts: DailyCount[] = dates.map(d => ({
     day: dateToDay.get(d.getTime())!,
     count: rawData.filter(r => r.Date.getTime() === d.getTime()).length
@@ -48,13 +42,13 @@ onMounted(async () => {
     return { day: d.day, total: running };
   });
 
-  // Chart dimensions and margins
+  // Dimensions
   const margin = { top: 20, right: 150, bottom: 100, left: 70 };
   const width = 900 - margin.left - margin.right;
   const height = 400 - margin.top - margin.bottom;
   const axisLabelOffset = 50;
 
-  // Create SVG canvas
+  // SVG canvas
   const svg = d3.select(chart.value)
     .append('svg')
     .attr('width', width + margin.left + margin.right)
@@ -77,7 +71,7 @@ onMounted(async () => {
     .nice()
     .range([height, 0]);
 
-  // Draw axes
+  // Axes
   svg.append('g')
     .attr('transform', `translate(0,${height})`)
     .call(d3.axisBottom(x));
@@ -95,30 +89,43 @@ onMounted(async () => {
     .attr('transform', `translate(${-margin.left + 15},${height / 2}) rotate(-90)`)
     .text('Number of Games');
 
-  // Draw bars
+  // Bars with enter animation
   svg.selectAll('.bar')
     .data(dailyCounts)
     .enter()
     .append('rect')
       .attr('class', 'bar')
       .attr('x', d => x(d.day)!)
-      .attr('y', d => yBar(d.count))
       .attr('width', x.bandwidth())
-      .attr('height', d => height - yBar(d.count))
-      .attr('fill', 'steelblue');
+      .attr('y', height)
+      .attr('height', 0)
+      .attr('fill', 'steelblue')
+    .transition()
+      .duration(1500)
+      .attr('y', d => yBar(d.count))
+      .attr('height', d => height - yBar(d.count));
 
-  // Draw cumulative line
+  // Cumulative line with draw animation
   const lineGen = d3.line<Cumulative>()
     .x(d => x(d.day)! + x.bandwidth() / 2)
     .y(d => yLine(d.total));
-  svg.append('path')
+
+  const path = svg.append('path')
     .datum(cumulative)
     .attr('fill', 'none')
     .attr('stroke', 'orange')
     .attr('stroke-width', 2)
-    .attr('d', lineGen);
+    .attr('d', lineGen as any);
 
-  // Legend entries
+  const totalLength = (path.node() as SVGPathElement).getTotalLength();
+  path
+    .attr('stroke-dasharray', `${totalLength} ${totalLength}`)
+    .attr('stroke-dashoffset', totalLength)
+    .transition()
+      .duration(2000)
+      .attr('stroke-dashoffset', 0);
+
+  // Legend
   const legendY = height + axisLabelOffset + 20;
   const legend = svg.append('g')
     .attr('transform', `translate(${width / 2}, ${legendY})`)
