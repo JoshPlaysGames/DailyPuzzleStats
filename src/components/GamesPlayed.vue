@@ -1,5 +1,7 @@
 <template>
-  <div ref="chart"></div>
+  <div class="chart-container">
+    <div class="chart" ref="chart"></div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -215,6 +217,10 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.chart-container {
+  text-align: center;
+}
+
 .bar-label,
 .hover-label {
   font-size: 12px;

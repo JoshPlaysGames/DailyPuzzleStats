@@ -7,11 +7,21 @@ dataFile: '2025_GamesClub_Data.csv'
 
 import GamesStats from '../../../components/GamesStats.vue';
 import GamesPlayed from '../../../components/GamesPlayed.vue';
-
-Here’s a quick overview of how the club did this month. We saw some close finishes and a few blowouts…
+import GamesBreakdown from '../../../components/GamesBreakdown.vue';
+import GamesCalendar from '../../../components/GamesCalendar.vue';
+import PlayerLeaderboard from '../../../components/PlayerLeaderboard.vue';
 
 <GamesStats client:visible dataFile="2025_GamesClub_Data.csv" />
 
-All together, that worked out to some interesting totals…
-
+## Games Played
 <GamesPlayed client:visible dataFile="2025_GamesClub_Data.csv" />
+
+## Games Breakdown
+<GamesBreakdown client:visible dataFile="2025_GamesClub_Data.csv" />
+
+## Games Calendar
+<GamesCalendar client:visible dataFile="2025_GamesClub_Data.csv" />
+
+
+## Leaderboard
+<PlayerLeaderboard client:visible dataFile="2025_GamesClub_Data.csv" />
